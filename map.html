@@ -1,0 +1,441 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static "css/map.css" %}">
+{% endblock  %}
+
+{% block title %}
+    Map
+{% endblock  %}
+
+{% block content %}
+
+    <!-- <div class="navbar-overlay"></div> -->
+
+    <!-- error popups -->
+    {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}
+      <li class="error-notification">{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="main-container">
+        <div class="routing-container">
+            <form id="id-mainform" class="form-container" method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="form-area">
+                    <div class="accordion">
+                      <div class="accordion-header"onclick="this.classList.toggle('open')"><div style="width:50%;">Origin Coordinates</div><svg width="20px"height="20px">
+                        <path class="dropdown-arrow-up"stroke="white"fill="none"stroke-linecap="round"stroke-linejoin="round"stroke-width="2px"d="M 4 7 L 10 13 L 16 7"/>
+                        <path class="dropdown-arrow-down"stroke="transparent"fill="none"stroke-linecap="round"stroke-linejoin="round"stroke-width="2px"d="M 4 13 L 10 7 L 16 13"/>
+
+                      </svg></div>
+                      <div class="accordion-content">
+                        <!-- Latitude -->
+                        <div class="form-inner-area">
+                          <div class="form-inner-text">Latitude of Origin:</div>
+                          {% render_field form.LatOrigin class+="form-field" %}
+                        </div>
+                        <!-- Longitude -->
+                        <div class="form-inner-area">
+                          <div class="form-inner-text">Longitude of Origin:</div>
+                          {% render_field form.LongOrigin class+="form-field" %}
+                        </div>
+                        <p style="margin-top:16px;margin-bottom:16px; font-weight:bold;">OR</p>
+                        <div class="form-inner-area">
+                          <div class="form-inner-text">MGRS Coordinates:</div>
+                          {% render_field form.AltCoordinates class+="form-field" %}
+                        </div>
+                        <!-- Use my Location Button -->
+                        <button type="button" class="form-location-button" onclick="setCurrentLocation()">Use My Location</button>
+                      </div>
+                    </div>
+                </div>
+
+                <div class="form-area">
+                    <div class="accordion">
+                      <div class="accordion-header"onclick="this.classList.toggle('open')"><div style="width:50%;">Resource Needs</div><svg width="20px"height="20px">
+                        <path class="dropdown-arrow-up"stroke="white"fill="none"stroke-linecap="round"stroke-linejoin="round"stroke-width="2px"d="M 4 7 L 10 13 L 16 7"/>
+                        <path class="dropdown-arrow-down"stroke="transparent"fill="none"stroke-linecap="round"stroke-linejoin="round"stroke-width="2px"d="M 4 13 L 10 7 L 16 13"/>
+
+                      </svg></div>
+                      <div class="accordion-content">
+                        <div class="form-inner-area">
+                          <div class="form-inner-text">Water Capacity Needed (Gallons):</div>
+                          {% render_field form.water_capacity class+="form-field" min="0" %}
+                        </div>
+                        <div class="form-inner-area">
+                          <div class="form-inner-text">Food Capacity Needed (Meals):</div>
+                          {% render_field form.meal_capacity class+="form-field" min="0" %}
+                        </div>
+                        <div class="form-inner-area">
+                          <div class="form-inner-text">Diesel Capacity Needed (Gallons):</div>
+                          {% render_field form.diesel_capacity class+="form-field" min="0" %}
+                        </div>
+                      </div>
+                    </div>
+                </div>
+                <!-- Fixed Wyp Section  -->
+                <div class="form-area">
+                    <div class="accordion">
+                      <div class="accordion-header"onclick="this.classList.toggle('open')"><div style="width:50%;">Fixed Waypoint 1</div><svg width="20px"height="20px">
+                        <path class="dropdown-arrow-up"stroke="white"fill="none"stroke-linecap="round"stroke-linejoin="round"stroke-width="2px"d="M 4 7 L 10 13 L 16 7"/>
+                        <path class="dropdown-arrow-down"stroke="transparent"fill="none"stroke-linecap="round"stroke-linejoin="round"stroke-width="2px"d="M 4 13 L 10 7 L 16 13"/>
+
+                      </svg></div>
+                      <div class="accordion-content">
+                        <div class="form-inner-area">
+                          <div class="form-inner-text">Latitude of Fixed Waypoint 1:</div>
+                          {% render_field form.Lat_FW class+="form-field" %}
+                        </div>
+                        <div class="form-inner-area">
+                          <div class="form-inner-text">Longitude of Fixed Waypoint 1:</div>
+                          {% render_field form.Long_FW class+="form-field" %}
+                        </div>
+                        <p style="margin-top:16px;margin-bottom:16px; font-weight:bold;">OR</p>
+                        <!-- MGRS Coordinates -->
+                        <div class="form-inner-area">
+                            <div class="form-inner-text">MGRS Coordinates:</div>
+                            {% render_field form.AltCoordinates_FW class+="form-field" %}
+                        </div>
+                      </div>
+                    </div>
+                </div>
+
+                <!-- Final Destination Section with "Use My Location" Button -->
+                <div class="form-area last-form-area">
+                  <div class="accordion">
+                    <div class="accordion-header"onclick="this.classList.toggle('open')"><div style="width:50%;">Final Destination</div><svg width="20px"height="20px">
+                        <path class="dropdown-arrow-up"stroke="white"fill="none"stroke-linecap="round"stroke-linejoin="round"stroke-width="2px"d="M 4 7 L 10 13 L 16 7"/>
+                        <path class="dropdown-arrow-down"stroke="transparent"fill="none"stroke-linecap="round"stroke-linejoin="round"stroke-width="2px"d="M 4 13 L 10 7 L 16 13"/>
+
+                      </svg></div>
+                    <div class="accordion-content">
+                      <div class="form-inner-area">
+                        <div class="form-inner-text">Latitude of Final Destination:</div>
+                        {% render_field form.Lat_FD class+="form-field" %}
+                      </div>
+                      <div class="form-inner-area">
+                        <div class="form-inner-text">Longitude of Final Destination:</div>
+                        {% render_field form.Long_FD class+="form-field" %}
+                      </div>
+                      <p style="margin-top:16px;margin-bottom:16px; font-weight:bold;">OR</p>
+                      <!-- MGRS Coordinates -->
+                      <div class="form-inner-area">
+                          <div class="form-inner-text">MGRS Coordinates:</div>
+                          {% render_field form.AltCoordinates_FD class+="form-field" %}
+                      </div>
+                        <!-- New button to auto-fill Final Destination  using geolocation -->
+                        <button type="button" class="form-location-button" onclick="setFinalDestination()">Use My Location</button>
+                    </div>
+                  </div>
+              </div>
+              <div class="button-container">
+                <button class="form-button" type="button" id="resetButton" onclick="resetForm()">RESET</button>
+                <button class="form-button" type="submit">SUBMIT</button>
+              </div>
+              </form>
+
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+        </div>
+
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const loading = document.getElementById('loading');
+
+            form.addEventListener('submit', function() {
+                loading.style.display = 'block';
+            });
+            
+            // Select all inputs
+            const inputs = form.querySelectorAll('input, textarea, select');
+            
+            inputs.forEach(input => {
+                if (!input.name) {
+                    console.warn("Input without name attribute:", input);
+                    return;
+                } 
+                const saved = sessionStorage.getItem(input.name);
+                if (saved) {
+                    input.value = saved;
+                } else {
+                    console.log(`✗ No saved value for [${input.name}]`);
+                }
+            });
+            inputs.forEach(input => {
+                if (!input.name) {
+                    console.warn("Skipping input without name attribute:", input);
+                    return;
+                }    
+                input.addEventListener('input', () => {
+                    sessionStorage.setItem(input.name, input.value);
+                });
+                console.log(`Listener added for: ${input.name}`);
+            });
+
+            // Reset button clears session and reloads
+            const resetBtn = document.getElementById('resetButton');
+            resetBtn.addEventListener('click', () => {
+                sessionStorage.clear();
+                window.location.href = window.location.origin + window.location.pathname;
+            });
+        });
+
+        // Function for auto-filling origin coordinates
+        function setCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const latInput = document.getElementById("id_LatOrigin");
+                        const longInput = document.getElementById("id_LongOrigin");
+
+                        latInput.value = position.coords.latitude;
+                        longInput.value = position.coords.longitude;
+
+                        //store values to sessions
+                        sessionStorage.setItem(latInput.name, latInput.value);
+                        sessionStorage.setItem(longInput.name, longInput.value);
+
+                    },
+                    function(error) {
+                      displayErrorMessage("Error obtaining location: " + error.message);    
+                    }
+                );
+            } else {
+              displayErrorMessage("Geolocation is not supported by this browser.");
+            }
+        }
+
+        // Function for auto-filling final destination coordinates
+        /*function setFinalDestination() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const latInput = document.getElementById("id_Lat_FD");
+                        const longInput = document.getElementById("id_Long_FD");
+
+                        latInput.value = position.coords.latitude;
+                        longInput.value = position.coords.longitude;
+
+                        sessionStorage.setItem(latInput.name, latInput.value);
+                        sessionStorage.setItem(longInput.name, longInput.value);
+                    },
+                    function(error) {
+                        displayErrorMessage("Error obtaining location: " + error.message);
+                    }
+                );
+            } else {
+                displayErrorMessage("Geolocation is not supported by this browser.");
+            }
+        }*/
+        function setFinalDestination() {
+            const originLat = document.getElementById("id_LatOrigin");
+            const originLong = document.getElementById("id_LongOrigin");
+
+            const destLat = document.getElementById("id_Lat_FD");
+            const destLong = document.getElementById("id_Long_FD");
+
+            // Make sure Origin has been set first
+            if (!originLat.value || !originLong.value) {
+                displayErrorMessage("Please set the Origin location first.");
+                return;
+            }
+
+            // Copy Origin -> Destination
+            destLat.value = originLat.value;
+            destLong.value = originLong.value;
+
+            // Store values in session storage
+            sessionStorage.setItem(destLat.name, destLat.value);
+            sessionStorage.setItem(destLong.name, destLong.value);
+        }
+        function toggleFullScreen(button){
+          const container = button?.closest('.waypoint-container') || button?.parentElement?.parentElement;
+          if(!container)return;
+          var isFullScreenMode = (document.fullscreenElement && document.fullscreenElement !== null) ||
+        (document.webkitFullscreenElement && document.webkitFullscreenElement !== null) ||
+        (document.mozFullScreenElement && document.mozFullScreenElement !== null) ||
+        (document.msFullscreenElement && document.msFullscreenElement !== null);
+          //currently fullscreen
+          if (isFullScreenMode){
+            if (document.exitFullscreen){
+              document.exitFullscreen();
+            }else if (document.webkitExitFullscreen){
+              document.webkitExitFullscreen();
+            }else if(document.mozCancelFullScreen){
+              document.mozCancelFullScreen();
+            }else if(document.msExitFullscreen){
+              document.msExitFullscreen();
+            }else{
+              //This should never happen because it wouldn't have fullscreened but just in case.
+              alert("Something went wrong. Try again, refresh, or close browser if it doesn't work.")
+            }
+          // currently non-fullscreen
+          }else{
+            if(container.requestFullscreen){
+              container.requestFullscreen();
+            } else if (container.mozRequestFullScreen) {
+              container.mozRequestFullScreen();
+            } else if (container.webkitRequestFullscreen) {
+              container.webkitRequestFullscreen();
+            } else if (container.msRequestFullscreen) {
+              container.msRequestFullscreen();
+            }else{
+              alert("Fullscreen is not supported on this device.") // fullscreen errors should be alerts not displayErrorMessage function
+            }
+          }
+        }
+        // detect is user exits/enters full screen using button or browser (escape key wouldn't work unless done this way)
+        document.addEventListener('fullscreenchange', updateFullscreenIcon);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+        document.addEventListener('mozfullscreenchange', updateFullscreenIcon);
+        document.addEventListener('msfullscreenchange', updateFullscreenIcon);
+        function updateFullscreenIcon() {
+          const exitbutton = document.getElementById('exit-directions-fullscreen');
+          const enterbutton = document.getElementById('enter-directions-fullscreen');
+          const container = enterbutton?.closest('.waypoint-container') || enterbutton?.parentElement?.parentElement?.parentElement?.parentElement;
+          container.classList.toggle("fullscreened");
+          if (exitbutton.getAttribute('stroke')=='transparent') {
+            enterbutton.setAttribute('stroke', 'transparent');
+            exitbutton.setAttribute('stroke', 'white');
+          } else {
+            enterbutton.setAttribute('stroke', 'white');
+            exitbutton.setAttribute('stroke', 'transparent');
+          }
+        }
+
+        </script>
+
+        <div class="map-container" id="map"></div>
+    </div>
+
+    <div class="container">
+        <div class="waypoint-container">
+            <div class="directions-container">
+              <h1 id="directions-container-header">DIRECTIONS</h1>
+              <button class="toggleFSbutton" onclick="toggleFullScreen(this)">
+                <svg width="30"height="30">
+                  <path
+                    id="enter-directions-fullscreen"
+                    stroke="white"
+                    stroke-width="5"
+                    fill="none"
+                    d="
+                      M 10,2 L 2,2 L 2,10
+                      M 20,2 L 28,2 L 28,10
+                      M 28,20 L 28,28 L 20,28
+                      M 10,28 L 2,28 L 2,20"
+                  />
+                  <path
+                    id="exit-directions-fullscreen"
+                    stroke="transparent"
+                    stroke-width="4"
+                    fill="none"
+                    d="
+                      M 10,0 L 10,10 L 0,10
+                      M 20,0 L 20,10 L 30,10
+                      M 30,20 L 20,20 L 20,30
+                      M 10,30 L 10,20 L 0,20"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div id="panel" class="panel-border"></div>
+        </div>
+        <div class="waypoint-container">
+          <h1>ROUTE INFORMATION</h1>
+          {% if route %}
+          <div class="route-info-subsection">
+            <h2 class="subsection-header">General</h2>
+            <div class="general-route-info-div"style="margin-top:1.5rem"><p>Total Distance (Meters):</p><p id ="route-distance-display">{{ route.distance }}</p></div>
+            <div class="general-route-info-div"><p>Number of Resource Stops:</p><p>{{ resourceStopNum }}</p></div>
+            <div class="general-route-info-div"><p>Food Available (Meals):</p><p>{{ route.meal }}</p></div>
+            <div class="general-route-info-div"><p>Water Available (Gallons):</p><p>{{ route.water|floatformat:0 }}</p></div>
+            <div class="general-route-info-div"style="margin-bottom:1.5rem"><p>Diesel Available (Gallons):</p><p>{{ route.fuel|floatformat:0 }}</p></div>
+          </div> 
+          <div class="route-info-subsection">
+            <h2 class="subsection-header">Route Stops</h2> 
+            <ul id="waypoint-display-ul">
+              <li>
+                <div class="waypoint-li-header"><p class="letter"></p><p class="title">Origin</p></div>
+                <div class="waypoint-li-info">
+                  <div class="address">Address here</div>
+                </div>
+              </li>
+              {% for point in waypoints %}
+              <li>
+                <div class="waypoint-li-header"><p class="letter"></p><p class="title">Name here</p></div>
+                <div class="waypoint-li-info">
+                  <div class="address">Address here</div>
+                </div>
+              </li>
+              {% endfor %}
+              <li style="margin-bottom:0;">
+                <div class="waypoint-li-header"><p class="letter"></p><p class="title">Destination</p></div>
+                <div class="waypoint-li-info">
+                  <div class="address">Address here</div>
+                </div>
+              </li>
+            </ul>
+          </div>
+          {% endif %}
+        </div>  
+    </div>
+
+    <script>
+        const accordionHeaders = document.querySelectorAll('.accordion-header');
+        const accordionContents = document.querySelectorAll('.accordion-content');
+
+        accordionHeaders.forEach((header, index) => {
+            header.addEventListener('click', () => {
+                accordionContents[index].classList.toggle('show');
+            });
+        });
+    </script>
+
+    <script type="text/javascript">
+        var google_api_key = "{{google_api_key|safe}}";
+    </script>
+    <script type="text/javascript">
+      // These must be defined in order for them to be used in the if statement below
+      var waypoints = {{ waypoints|safe }};
+      var latOrigin = {{ latOrigin|default:"null" }};
+      var longOrigin = {{ longOrigin|default:"null" }};
+      var Lat_FD = {{ Lat_FD|default:"null" }};
+      var Long_FD = {{ Long_FD|default:"null" }};
+
+
+      // Starts the route at origin
+      var locations = [{lat: {{ latOrigin }}, lng: {{ longOrigin }} }];
+
+      // Iterate over the waypoints object and add each to the locations array
+      waypoints.forEach(function(waypoint) {
+          locations.push({lat: waypoint.lat, lng: waypoint.lng});
+      });
+
+      // Ends the route with a return to the origin if there is no final destination input
+      // Debugging print statement
+      //console.log(Lat_FD, Long_FD);
+      if (Lat_FD && Long_FD){
+        locations.push({lat: {{ Lat_FD }}, lng: {{ Long_FD }} });
+      }
+      else{
+        locations.push({lat: {{ latOrigin }}, lng: {{ longOrigin }} });
+      }
+
+
+    </script>
+
+  
+    <script src="{% static 'scripts/map.js' %}"></script>
+
+{% endblock  %}
